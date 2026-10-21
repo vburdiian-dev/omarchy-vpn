@@ -45,6 +45,7 @@
           "Mullvad",
           "Windscribe",
           "Cloudflare WARP",
+          "NetBird",
           "NetworkManager",
           "AmneziaWG"
         ],
@@ -70,7 +71,7 @@
         "type": "string",
         "label": "Hidden VPN tools (comma separated)",
         "defaultValue": "",
-        "description": "Tools the widget ignores entirely: proton, mullvad, windscribe, warp, networkmanager, amneziawg. Also editable from the gear inside the panel."
+        "description": "Tools the widget ignores entirely: proton, mullvad, windscribe, warp, netbird, networkmanager, amneziawg. Also editable from the gear inside the panel."
       }
     ]
   }
