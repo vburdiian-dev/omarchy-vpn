@@ -4,7 +4,7 @@ A VPN widget for the Omarchy bar. One icon shows whether you are behind a
 tunnel; one panel connects, disconnects, and switches between the VPN tools you
 actually have installed.
 
-It supports **Proton VPN**, **Mullvad**, **Windscribe**, **Cloudflare WARP**, **AmneziaWG**, and the **OpenVPN**,
+It supports **Proton VPN**, **Mullvad**, **Windscribe**, **Cloudflare WARP**, **NetBird**, **AmneziaWG**, and the **OpenVPN**,
 **OpenConnect** and **WireGuard** profiles NetworkManager holds. Only the tools
 that have something to offer appear — install none and the widget tells you so;
 have several and a chip row lets you switch between them.
@@ -12,7 +12,7 @@ have several and a chip row lets you switch between them.
 <img src="preview.png" alt="The VPN panel open in the Omarchy bar, showing a Proton VPN connection to Zurich and a country list" width="365">
 
 Each installed tool gets its own chip and its own view — Proton VPN above,
-[Mullvad](#mullvad), [Windscribe](#windscribe), [AmneziaWG](#amneziawg) and
+[Mullvad](#mullvad), [Windscribe](#windscribe), [NetBird](#netbird), [AmneziaWG](#amneziawg) and
 [NetworkManager](#networkmanager-profiles) below.
 
 ## Install
@@ -94,6 +94,9 @@ Omarchy with its Quickshell desktop, plus at least one of:
 - **Cloudflare WARP** — `warp-cli` with `warp-svc` running, the device
   registered (`warp-cli registration new`), and WARP's terms accepted once in a
   terminal.
+- **NetBird** — the `netbird` CLI with its daemon running
+  (`sudo netbird service install && sudo netbird service start`), joined to a
+  management server once (`netbird up --management-url <url>`).
 - **AmneziaWG** — `awg` and `awg-quick` from `amneziawg-tools`, with at least
   one `.conf` profile in `~/.config/omarchy/vpn/awg-profiles/`.
 - **OpenVPN, WireGuard, OpenConnect or VPNC** — `nmcli`, plus `openvpn`, `wg`
@@ -110,7 +113,7 @@ Configure these in **Setup › Plugins**, or in the widget's entry in
 | `refreshIntervalSec` | `15` | How often the connection status is polled |
 | `preferredBackend` | `Auto` | Which tool the panel opens on. `Auto` picks whichever is connected |
 | `favoriteCountries` | `CH,NL,US` | Country codes pinned to the top of the Proton VPN and Mullvad lists. Windscribe has no codes, so it matches names instead — see below |
-| `hiddenBackends` | *(empty)* | Tools the widget ignores entirely: `proton`, `mullvad`, `windscribe`, `warp`, `networkmanager`, `amneziawg`. The gear inside the panel writes this |
+| `hiddenBackends` | *(empty)* | Tools the widget ignores entirely: `proton`, `mullvad`, `windscribe`, `warp`, `netbird`, `networkmanager`, `amneziawg`. The gear inside the panel writes this |
 
 ## Mullvad
 
@@ -196,6 +199,63 @@ the prompt yourself, then reopen the panel.
 
 Switching to another tool runs `warp-cli disconnect`, which also turns off
 WARP's own Always On, so it stays off until you connect it again.
+
+## NetBird
+
+> **Local addition.** NetBird support lives on the local branch
+> `feat/netbird-backend` and is not part of upstream `omarchy-vpn`. See
+> [Keeping the local branch](#keeping-the-local-branch) below.
+
+NetBird is a mesh rather than a pick-a-country VPN: the daemon joins whatever
+network its management server hands it. There is no NetworkManager plugin for
+it, so it gets a chip of its own, driven by the `netbird` CLI. The daemon's
+socket (`/var/run/netbird.sock`) is world-writable as the package installs it,
+so nothing here needs root.
+
+First-time setup, once, in a terminal:
+
+```bash
+sudo netbird service install && sudo netbird service start
+netbird up --management-url https://vpn.example.org
+```
+
+After that:
+
+- **The switch** and right-click on the bar icon run `netbird up` and
+  `netbird down`.
+- **The list** has one row per NetBird profile (`netbird profile list`). The
+  active one shows its management server. Picking a different profile runs
+  `netbird down`, `netbird profile select <name>`, then `netbird up`.
+- **While connected** the panel shows the NetBird IP, this machine's NetBird name, how many
+  peers are connected, the management server, and when the SSO session expires.
+- **When a login is needed** (first connect, or the session expired),
+  `netbird up` opens the browser itself and waits. The panel shows
+  "Connecting…" until the login completes.
+
+If the daemon is not running, the panel offers
+`sudo netbird service install; sudo netbird service start` to fix it.
+
+NetBird's own `wt0` interface does not show up on the NetworkManager chip as
+well: NetworkManager keeps it as a volatile connection under `/run`, and the
+NetworkManager chip skips those.
+
+Like every tool here, NetBird is exclusive with the others: connecting NetBird
+turns off any other VPN in the panel, and connecting another tool turns NetBird
+off. If you want NetBird running alongside a full-tunnel VPN, hide one of them
+with the gear and manage it from its own CLI.
+
+### Keeping the local branch
+
+The plugin runs straight from its git checkout, so NetBird appears only while
+`feat/netbird-backend` is checked out. `omarchy plugin update` may fail or
+behave oddly while you are on this branch. Pick up upstream changes by
+rebasing the branch onto them:
+
+```bash
+cd ~/.config/omarchy/plugins/jkoestinger.vpn
+git fetch origin && git rebase origin/main
+omarchy restart shell
+```
 
 ## AmneziaWG
 
